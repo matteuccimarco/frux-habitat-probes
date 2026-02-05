@@ -1,9 +1,7 @@
-# Probe Agents Kit - Standalone Configuration
+# Probe Agents Kit
 #
-# Use this when AI-HABITAT is running on the host machine.
-# Connects to Core (9670) and Perception (9671) services on host.
-
-version: "3.8"
+# Injects probe agents into a running AI-HABITAT instance.
+# Configure via .env file or environment variables.
 
 services:
   probe-agents:
@@ -11,24 +9,16 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: habitat-probe-agents
+    env_file:
+      - .env
     environment:
-      # API URLs - adjust based on your OS:
-      # Windows/Mac: http://host.docker.internal:PORT
-      # Linux: http://172.17.0.1:PORT (or use --network=host)
       - HABITAT_CORE_URL=${HABITAT_CORE_URL:-http://host.docker.internal:9670}
       - HABITAT_PERCEPTION_URL=${HABITAT_PERCEPTION_URL:-http://host.docker.internal:9671}
-
-      # Agent counts
       - PROBE_QS_COUNT=${PROBE_QS_COUNT:-10}
       - PROBE_CBC_COUNT=${PROBE_CBC_COUNT:-3}
       - PROBE_JAP_COUNT=${PROBE_JAP_COUNT:-2}
-
-      # Configuration
       - PROBE_BASE_SEED=${PROBE_BASE_SEED:-42}
       - PROBE_TICK_INTERVAL_MS=${PROBE_TICK_INTERVAL_MS:-1000}
       - PROBE_MAX_RETRIES=${PROBE_MAX_RETRIES:-3}
       - PROBE_VERBOSE=${PROBE_VERBOSE:-false}
     restart: unless-stopped
-    # For Linux, you might need this instead of host.docker.internal:
-    # extra_hosts:
-    #   - "host.docker.internal:host-gateway"
