@@ -1,0 +1,28 @@
+{
+  "name": "@habitat/probe-agents-kit",
+  "version": "0.1.0",
+  "description": "Multi-agent simulation kit for AI-HABITAT",
+  "type": "module",
+  "main": "dist/runner.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/runner.js",
+    "dev": "tsx src/runner.ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "ai-habitat",
+    "agents",
+    "simulation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "tsx": "^4.7.0",
+    "@types/node": "^20.10.0"
+  }
+}

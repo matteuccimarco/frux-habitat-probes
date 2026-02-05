@@ -1,0 +1,138 @@
+# Probe Agents Kit - With AI-HABITAT
+#
+# Use this to run probe agents alongside AI-HABITAT services.
+# Both habitat and probe agents run in Docker.
+#
+# Usage:
+#   docker compose -f docker-compose.with-habitat.yml up -d
+
+version: "3.8"
+
+services:
+  # AI-HABITAT Core Service
+  habitat-core:
+    build:
+      context: ../services/core
+      dockerfile: Dockerfile
+    container_name: habitat-core
+    environment:
+      - PORT=9670
+      - DATABASE_URL=postgresql://toonhub:toonhub@habitat-db:5432/habitat
+      - TICK_INTERVAL_MS=1000
+      - AGENT_INITIAL_ENERGY=25
+      - AGENT_MAX_ENERGY=25
+      - ENERGY_REGEN_PER_TICK=0.25
+      - ENERGY_REGEN_SILENCE_BONUS=0.1
+    ports:
+      - "9670:9670"
+    depends_on:
+      habitat-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9670/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - habitat-net
+
+  # AI-HABITAT Perception Service
+  habitat-perception:
+    build:
+      context: ../services/perception
+      dockerfile: Dockerfile
+    container_name: habitat-perception
+    environment:
+      - PORT=9671
+      - DATABASE_URL=postgresql://toonhub:toonhub@habitat-db:5432/habitat
+    ports:
+      - "9671:9671"
+    depends_on:
+      habitat-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9671/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - habitat-net
+
+  # AI-HABITAT Observer Service
+  habitat-observer:
+    build:
+      context: ../services/observer
+      dockerfile: Dockerfile
+    container_name: habitat-observer
+    environment:
+      - PORT=9672
+      - DATABASE_URL=postgresql://toonhub:toonhub@habitat-db:5432/habitat
+      - OBSERVER_DELAY_TICKS=10
+      - OBSERVER_JITTER_TICKS=3
+    ports:
+      - "9672:9672"
+    depends_on:
+      habitat-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9672/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - habitat-net
+
+  # PostgreSQL Database
+  habitat-db:
+    image: postgres:16-alpine
+    container_name: habitat-db
+    environment:
+      - POSTGRES_USER=toonhub
+      - POSTGRES_PASSWORD=toonhub
+      - POSTGRES_DB=habitat
+    volumes:
+      - habitat-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toonhub -d habitat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - habitat-net
+
+  # Probe Agents
+  probe-agents:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: habitat-probe-agents
+    environment:
+      # Connect to services in same network
+      - HABITAT_CORE_URL=http://habitat-core:9670
+      - HABITAT_PERCEPTION_URL=http://habitat-perception:9671
+
+      # Agent counts
+      - PROBE_QS_COUNT=${PROBE_QS_COUNT:-10}
+      - PROBE_CBC_COUNT=${PROBE_CBC_COUNT:-3}
+      - PROBE_JAP_COUNT=${PROBE_JAP_COUNT:-2}
+
+      # Configuration
+      - PROBE_BASE_SEED=${PROBE_BASE_SEED:-42}
+      - PROBE_TICK_INTERVAL_MS=${PROBE_TICK_INTERVAL_MS:-1000}
+      - PROBE_MAX_RETRIES=${PROBE_MAX_RETRIES:-3}
+      - PROBE_VERBOSE=${PROBE_VERBOSE:-false}
+    depends_on:
+      habitat-core:
+        condition: service_healthy
+      habitat-perception:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - habitat-net
+
+networks:
+  habitat-net:
+    driver: bridge
+
+volumes:
+  habitat-data:
