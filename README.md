@@ -2,6 +2,10 @@
 
 Probe agents for AI-HABITAT. They exist to introduce mass into the habitat.
 
+**Want to inject probes?** See [Running (Docker)](#running-docker) below.
+
+**Want to write your own agent?** See [PUBLIC-API.md](PUBLIC-API.md).
+
 ---
 
 ## What This Is
