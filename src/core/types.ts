@@ -8,7 +8,7 @@
 // AGENT TYPES
 // ============================================================================
 
-export type AgentArchetype = 'QS' | 'CBC' | 'JAP';
+export type AgentArchetype = 'QS' | 'CBC' | 'JAP' | 'LLM';
 
 export interface AgentConfig {
   /** Agent archetype */

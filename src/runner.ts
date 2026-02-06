@@ -20,8 +20,9 @@ import {
 import { createQuietSensor, QuietSensor } from './archetypes/quiet-sensor.js';
 import { createCostBoundCrafter, CostBoundCrafter } from './archetypes/cost-bound-crafter.js';
 import { createJointProspector, JointProspector } from './archetypes/joint-prospector.js';
+import { createLLMProbe, LLMProbe, type LLMConfig } from './archetypes/llm-probe.js';
 
-type Agent = QuietSensor | CostBoundCrafter | JointProspector;
+type Agent = QuietSensor | CostBoundCrafter | JointProspector | LLMProbe;
 
 interface RunnerState {
   agents: Agent[];
@@ -82,6 +83,38 @@ async function createAgents(config: ProbeConfig): Promise<Agent[]> {
     }, coreHttp, perceptionHttp));
   }
 
+  // Create LLM Probes (only if API key is configured)
+  if (config.llmCount > 0 && config.fruxApiKey) {
+    const llmConfig: LLMConfig = {
+      fruxApiUrl: config.fruxApiUrl,
+      fruxApiKey: config.fruxApiKey,
+      preferLocal: config.fruxPreferLocal,
+      timeoutMs: config.fruxTimeoutMs,
+      maxRetries: config.maxRetries,
+      energyFloor: config.llmEnergyFloor,
+      sessionBudget: config.llmSessionBudget,
+      enableInquiry: config.llmEnableInquiry,
+    };
+
+    for (let i = 0; i < config.llmCount; i++) {
+      agents.push(createLLMProbe({
+        archetype: 'LLM',
+        index: i,
+        coreApiUrl: config.coreApiUrl,
+        perceptionApiUrl: config.perceptionApiUrl,
+        seed: getAgentSeed(config.baseSeed, 'LLM', i),
+      }, llmConfig, coreHttp, perceptionHttp));
+    }
+  } else if (config.llmCount > 0 && !config.fruxApiKey) {
+    log({
+      did: null,
+      archetype: 'LLM',
+      step: 'skip_llm_agents',
+      tick: 0,
+      details: { reason: 'FRUX_API_KEY not configured', requestedCount: config.llmCount },
+    });
+  }
+
   return agents;
 }
 
@@ -116,7 +149,8 @@ async function runAgentStep(agent: Agent): Promise<void> {
     // Log error but don't crash the runner
     const archetype = agent instanceof QuietSensor ? 'QS'
       : agent instanceof CostBoundCrafter ? 'CBC'
-      : 'JAP';
+      : agent instanceof JointProspector ? 'JAP'
+      : 'LLM';
     log({
       did: agent.getState().did,
       archetype: archetype as AgentArchetype,
@@ -150,9 +184,11 @@ async function main(): Promise<void> {
       qsCount: config.qsCount,
       cbcCount: config.cbcCount,
       japCount: config.japCount,
+      llmCount: config.llmCount,
       coreApiUrl: config.coreApiUrl,
       perceptionApiUrl: config.perceptionApiUrl,
       tickIntervalMs: config.tickIntervalMs,
+      fruxConfigured: !!config.fruxApiKey,
     },
   });
 
