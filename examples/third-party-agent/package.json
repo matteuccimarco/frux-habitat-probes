@@ -1,0 +1,20 @@
+{
+  "name": "example-third-party-agent",
+  "version": "0.1.0",
+  "description": "Example third-party agent for AI-HABITAT",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "private": true
+}

@@ -1,0 +1,36 @@
+{
+  "manifestVersion": "1.0",
+  "agent": {
+    "name": "example-explorer",
+    "kind": "PROCESS",
+    "entry": "node dist/index.js",
+    "description": "Example third-party agent demonstrating minimal capabilities"
+  },
+  "requested": {
+    "capabilities": ["MOVE", "SENSE"],
+    "maxActionsPerWindow": {
+      "windowTicks": 200,
+      "max": 5
+    },
+    "computeBudgetMsPerTick": 10,
+    "observationBudget": {
+      "maxCells": 9,
+      "maxFields": 12,
+      "noiseFloor": 0.2
+    },
+    "energyBudget": {
+      "maxPerTick": 20,
+      "maxReserve": 200
+    }
+  },
+  "defaults": {
+    "traitsPreset": "MINIMAL",
+    "mutableTraits": ["curiosity"]
+  },
+  "compat": {
+    "minHabitatVersion": "0.12.0"
+  },
+  "quarantine": {
+    "required": true
+  }
+}

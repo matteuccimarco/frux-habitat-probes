@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://habitat.frux.dev/schemas/agent.manifest.1.0.json",
+  "title": "Agent Manifest",
+  "description": "Declares capabilities, budgets, and constraints for third-party agents in AI-HABITAT. World enforces all limits.",
+  "type": "object",
+  "required": ["manifestVersion", "agent", "requested"],
+  "additionalProperties": false,
+  "properties": {
+    "manifestVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version. Must match exactly."
+    },
+    "agent": {
+      "type": "object",
+      "description": "Agent identity and entry point.",
+      "required": ["name", "kind", "entry"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+          "description": "Unique agent identifier. Used for logging only, NOT visible in habitat."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["WASM", "PROCESS", "BUILTIN"],
+          "description": "Execution mode. WASM = sandboxed WebAssembly. PROCESS = isolated subprocess. BUILTIN = trusted internal agent."
+        },
+        "entry": {
+          "type": "string",
+          "description": "Entry point. For WASM: path to .wasm file. For PROCESS: command to execute. For BUILTIN: module name."
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Optional human-readable description. NOT exposed to habitat."
+        }
+      }
+    },
+    "requested": {
+      "type": "object",
+      "description": "Capabilities and budgets requested by agent. World may grant less, never more.",
+      "required": ["capabilities"],
+      "additionalProperties": false,
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "MOVE",
+              "SENSE",
+              "GENERATE_TRACE",
+              "PROPOSE_PACT",
+              "INQUIRY"
+            ]
+          },
+          "uniqueItems": true,
+          "minItems": 1,
+          "description": "Actions the agent may attempt. World enforces this set."
+        },
+        "maxActionsPerWindow": {
+          "type": "object",
+          "description": "Rate limit on actions. World rejects excess.",
+          "additionalProperties": false,
+          "properties": {
+            "windowTicks": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200,
+              "description": "Rolling window size in ticks."
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "description": "Maximum actions allowed in window."
+            }
+          }
+        },
+        "computeBudgetMsPerTick": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 10,
+          "description": "CPU time budget per tick in milliseconds. Exceeded = step terminated."
+        },
+        "observationBudget": {
+          "type": "object",
+          "description": "Limits on perception fidelity. World enforces noise floor.",
+          "additionalProperties": false,
+          "properties": {
+            "maxCells": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 49,
+              "default": 9,
+              "description": "Maximum cells visible in perception (e.g., 9 = 3x3 grid)."
+            },
+            "maxFields": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32,
+              "default": 12,
+              "description": "Maximum fields per entity in perception."
+            },
+            "noiseFloor": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.2,
+              "description": "Minimum noise added to observations. Higher = more degraded."
+            }
+          }
+        },
+        "energyBudget": {
+          "type": "object",
+          "description": "Energy constraints. World never grants more than this.",
+          "additionalProperties": false,
+          "properties": {
+            "maxPerTick": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "default": 20,
+              "description": "Maximum energy available per tick."
+            },
+            "maxReserve": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000,
+              "default": 200,
+              "description": "Maximum energy the agent can accumulate."
+            }
+          }
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "description": "Default trait values. World applies these at admission.",
+      "additionalProperties": false,
+      "properties": {
+        "traitsPreset": {
+          "type": "string",
+          "enum": ["QS", "CBC", "JAP", "LLM", "MINIMAL"],
+          "default": "MINIMAL",
+          "description": "Preset trait configuration. MINIMAL = most restricted."
+        },
+        "mutableTraits": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["curiosity", "persistence", "sociability", "entropy_affinity"]
+          },
+          "uniqueItems": true,
+          "description": "Traits the agent may modify at runtime (within bounds)."
+        }
+      }
+    },
+    "compat": {
+      "type": "object",
+      "description": "Compatibility requirements.",
+      "additionalProperties": false,
+      "properties": {
+        "minHabitatVersion": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "default": "0.12.0",
+          "description": "Minimum habitat version required. Semver format."
+        }
+      }
+    },
+    "quarantine": {
+      "type": "object",
+      "description": "Quarantine mode settings. Applied to untrusted third-party agents.",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, agent MUST run in quarantine shard."
+        },
+        "shardId": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Specific shard to assign. If omitted, world assigns one."
+        }
+      }
+    }
+  }
+}

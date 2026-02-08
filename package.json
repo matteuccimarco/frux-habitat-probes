@@ -1,9 +1,16 @@
 {
   "name": "@habitat/probe-agents-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Multi-agent simulation kit for AI-HABITAT",
   "type": "module",
   "main": "dist/runner.js",
+  "exports": {
+    ".": "./dist/runner.js",
+    "./manifest": "./dist/manifest/index.js",
+    "./sandbox": "./dist/sandbox/index.js",
+    "./core": "./dist/core/index.js",
+    "./archetypes": "./dist/archetypes/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/runner.js",
